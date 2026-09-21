@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>運用スタフビューア</title>
+
+<style>
+:root { --ink: #263238; --muted: #68747a; --line: #aeb7ba; --paper: #f5f6f5; --card: #fff; --accent: #557581; --accent-dark: #3f626e; }
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--ink); background: var(--paper); font-family: "Yu Gothic", "Meiryo", sans-serif; }
+.app-shell { max-width: 1120px; margin: 0 auto; padding: 32px 28px 60px; }
+.masthead { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
+.eyebrow, .summary-label { margin: 0 0 8px; color: var(--accent-dark); font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+h1 { margin: 0; font-size: 30px; line-height: 1; font-weight: 600; }
+.subtitle { margin: 10px 0 0; color: var(--muted); font-size: 13px; }
+.status-chip { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #56a76c; }
+.control-panel { border-bottom: 1px solid var(--line); padding: 10px 0; }
+.file-loaders { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.load-hint { margin-left: 4px; color: var(--muted); font-size: 12px; }
+.view-tabs { display: flex; border: 1px solid var(--line); }
+.view-tab { border: 0; border-right: 1px solid var(--line); background: #fff; cursor: pointer; padding: 7px 16px; font-weight: 700; }
+.view-tab:last-child { border-right: 0; }
+.view-tab.is-active { color: #fff; background: var(--ink); }
+.direction-tabs { display: flex; gap: 4px; }
+.direction-tab { border: 1px solid var(--line); background: #fff; cursor: pointer; padding: 7px 14px; font-weight: 700; }
+.direction-tab span { margin-left: 6px; font-size: 10px; }
+.direction-tab.is-active { color: #fff; background: var(--accent); }
+.file-picker { border: 1px solid var(--line); background: #fff; cursor: pointer; padding: 8px 12px; font-size: 12px; }
+.file-picker input { display: none; }
+.summary-bar { display: flex; align-items: center; gap: 22px; padding: 16px 0; }
+.summary-bar > div { display: flex; align-items: baseline; gap: 8px; }
+.summary-bar strong { font-size: 18px; }
+.train-picker { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.train-picker select { min-width: 230px; border: 1px solid var(--line); background: #fff; padding: 7px; }
+.search-box { display: flex; align-items: center; gap: 8px; margin-left: auto; border-bottom: 1px solid var(--ink); padding: 6px 0; }
+.search-box input { width: 200px; border: 0; outline: 0; background: transparent; }
+.staff-sheet { width: min(100%, 820px); margin: 0 auto; border: 2px solid var(--line); background: #fff; }
+.sheet-title { display: grid; grid-template-columns: 180px 1fr 130px; min-height: 126px; border-bottom: 1px solid var(--line); }
+.type-block { display: grid; place-items: center; border-right: 1px solid var(--line); color: var(--ink); background: #fff; font-size: 30px; font-weight: 600; letter-spacing: .08em; writing-mode: horizontal-tb; }
+.train-info { display: grid; grid-template-columns: 1fr 1fr; align-content: center; gap: 4px 20px; padding: 10px 14px; font-size: 14px; }
+.train-info div { display: flex; gap: 18px; }
+.train-info span { min-width: 42px; }
+.train-info strong { font-weight: 400; }
+.operation-number { align-self: end; padding: 0 10px 12px 0; text-align: right; font-size: 14px; }
+.staff-head, .stop-row { display: grid; grid-template-columns: 36px 36px minmax(108px, 1.2fr) 88px 88px 40px 82px 76px; }
+.staff-head { min-height: 29px; background: #fafafa; font-size: 12px; text-align: center; }
+.staff-head span, .stop-row > span { display: grid; place-items: center; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.staff-head span:last-child, .stop-row > span:last-child { border-right: 0; }
+.stop-row { min-height: 29px; font-size: 13px; }
+.station-name { font-size: 15px; }
+.time { font-variant-numeric: tabular-nums; }
+.arrival, .departure { white-space: nowrap; }
+.platform { font-weight: 700; }
+.empty-state { padding: 50px 0; color: var(--muted); text-align: center; }
+.operation-mode .train-picker { display: none; }
+.operation-group { width: min(100%, 980px); margin: 0 auto 14px; border: 2px solid var(--line); background: #fff; }
+.operation-group > summary { display: flex; align-items: center; gap: 18px; cursor: pointer; list-style: none; padding: 12px 16px; }
+.operation-group > summary::-webkit-details-marker, .operation-train > summary::-webkit-details-marker { display: none; }
+.operation-group > summary strong { font-size: 19px; }
+.operation-group > summary span { color: var(--muted); font-size: 12px; }
+.operation-trains { border-top: 1px solid var(--line); }
+.operation-train { border-bottom: 1px solid var(--line); }
+.operation-train:last-child { border-bottom: 0; }
+.operation-train > summary { display: grid; grid-template-columns: 28px 48px 100px 70px 1fr; align-items: center; gap: 10px; cursor: pointer; list-style: none; padding: 9px 16px; font-size: 13px; }
+.sequence-number { color: var(--muted); text-align: center; }
+.direction-mark { width: fit-content; padding: 3px 6px; font-size: 11px; font-weight: 700; }
+.direction-mark.down { color: #9d3e28; background: #f8e2dc; }
+.direction-mark.up { color: #285465; background: #dfebee; }
+.embedded-sheet { width: calc(100% - 32px); margin: 0 16px 14px; }
+.operation-train:not([open]) .embedded-sheet { display: none; }
+body:has(.direction-tab[data-direction="up"].is-active) { --accent: #3d7084; --accent-dark: #285465; }
+body:has(.direction-tab[data-direction="up"].is-active) .direction-tab.is-active { background: #dfebee; }
+body:has(.direction-tab[data-direction="down"].is-active) { --accent: #d55d3b; --accent-dark: #a8422a; }
+body:has(.direction-tab[data-direction="down"].is-active) .direction-tab.is-active { background: #f1e4dd; }
+@media (max-width: 700px) { .app-shell { padding: 18px 8px 40px; } .masthead { align-items: flex-start; flex-direction: column; gap: 10px; } .summary-bar { align-items: flex-start; flex-wrap: wrap; } .search-box { flex-basis: 100%; margin-left: 0; } .search-box input { width: 100%; } .staff-sheet { overflow-x: auto; } .sheet-title { grid-template-columns: 86px 330px 110px; min-width: 620px; } .staff-head, .stop-row { min-width: 620px; } }
+</style>
+</head>
+<body>
+
+<main class="app-shell">
+    <header class="masthead">
+        <div>
+            <h1>運用スタフ</h1>
+        </div>
+        <div class="status-chip"><span class="status-dot"></span><span id="statusText">読込中</span></div>
+    </header>
+    <section class="control-panel" aria-label="表示設定">
+        <div class="file-loaders" aria-label="CSV読み込み">
+            <label class="file-picker"><span>上り時刻表</span><input type="file" data-csv="up" accept=".csv"></label>
+            <label class="file-picker"><span>下り時刻表</span><input type="file" data-csv="down" accept=".csv"></label>
+            <label class="file-picker"><span>運用表</span><input type="file" data-csv="operation" accept=".csv"></label>
+            <span class="load-hint">← CSVを読み込ませてね！</span>
+        </div>
+    </section>
+    <section class="summary-bar">
+        <label class="search-box"><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="列車番号・運用番号で検索"></label>
+    </section>
+    <div id="result" class="operation-list"></div>
+    <p id="emptyState" class="empty-state">CSVを読み込んでいます。</p>
+</main>
+
+<script>
+const state = { down: null, up: null, operation: null, direction: "down", selectedIndex: 8 };
+const result = document.getElementById("result");
+const emptyState = document.getElementById("emptyState");
+
+function splitCsvLine(line) { return line.split(",").map(value => value.trim()); }
+function parseCSV(csvText) {
+    const lines = csvText.split(/\r?\n/);
+    const findRow = (name, occurrence = 0) => splitCsvLine(lines.filter(line => line.startsWith(name))[occurrence] || "");
+    const trainNumbers = findRow("列車番号").slice(2);
+    const operationNumbers = findRow("運用番号").slice(2);
+    const trainTypes = findRow("列車種別").slice(2);
+    const destinations = findRow("終着駅", 1).slice(2);
+    const stationMap = new Map();
+    lines.forEach(line => {
+        const columns = splitCsvLine(line);
+        if (!columns[0] || !["着", "発"].includes(columns[1])) return;
+        if (!stationMap.has(columns[0])) stationMap.set(columns[0], { arrival: [], departure: [], platform: [] });
+        stationMap.get(columns[0])[columns[1] === "着" ? "arrival" : "departure"] = columns.slice(2);
+    });
+    lines.forEach(line => {
+        const columns = splitCsvLine(line);
+        if (!columns[0] || columns[1] !== "番線") return;
+        if (!stationMap.has(columns[0])) stationMap.set(columns[0], { arrival: [], departure: [], platform: [] });
+        stationMap.get(columns[0]).platform = columns.slice(2);
+    });
+    const operations = {};
+    trainNumbers.forEach((trainNumber, index) => {
+        if (!trainNumber) return;
+        const operation = operationNumbers[index] || "不明";
+        if (!operations[operation]) operations[operation] = [];
+        operations[operation].push({ trainNumber, type: trainTypes[index] || "", destination: destinations[index] || "", index });
+    });
+    return { operations, stations: [...stationMap.entries()] };
+}
+function displayTime(value) {
+    if (!value) return "";
+    if (value === "ﾚ") return "⇩";
+    if (value === "||") return "";
+    const digits = value.replace(/[^0-9]/g, "");
+    if (digits.length === 6) return `${digits.slice(0, 2)}:${digits.slice(2, 4)}:${digits.slice(4)}`;
+    return value;
+}
+function stationRows(data, train) {
+    const rows = data.stations.map(([station, times]) => {
+        const arrival = times.arrival[train.index] || "";
+        const departure = times.departure[train.index] || "";
+        const platform = times.platform[train.index] || "";
+        if (!arrival && !departure && !platform) return "";
+        return `<div class="stop-row"><span></span><span></span><span class="station-name">${station}</span><span class="time arrival">${displayTime(arrival)}</span><span class="time departure">${displayTime(departure)}</span><span class="platform">${platform}</span><span></span><span></span></div>`;
+    });
+    return rows.filter(Boolean).join("");
+}
+function allTrains(data) { return Object.entries(data.operations).flatMap(([operation, trains]) => trains.map(train => ({ ...train, operation }))); }
+function allOperationTrains() {
+    return ["down", "up"].flatMap(direction => state[direction] ? allTrains(state[direction]).map(train => ({ ...train, direction, data: state[direction] })) : []);
+}
+function firstTrainTime(train) {
+    const values = train.data.stations.flatMap(([, times]) => [times.arrival[train.index], times.departure[train.index]]);
+    const time = values.find(value => /^\d{6}$/.test(value || ""));
+    return time ? Number(time) : Number.MAX_SAFE_INTEGER;
+}
+function selectedTrain(data) { return allTrains(data)[state.selectedIndex] || allTrains(data)[0]; }
+function updateTrainSelect(data) {
+    const query = document.getElementById("searchInput").value.trim().toLowerCase();
+    const trains = allTrains(data).filter(train => !query || train.trainNumber.toLowerCase().includes(query) || train.operation.toLowerCase().includes(query));
+    const select = document.getElementById("trainSelect");
+    select.innerHTML = trains.map(train => `<option value="${train.index}">${train.trainNumber} / ${train.operation} / ${train.type}</option>`).join("");
+    const train = trains.find(item => item.index === state.selectedIndex) || trains[0];
+    if (train) { state.selectedIndex = train.index; select.value = String(train.index); }
+    return train;
+}
+function operationGroups() {
+    const query = document.getElementById("searchInput").value.trim().toLowerCase();
+    const groups = {};
+    allOperationTrains().forEach(train => {
+        if (query && !train.operation.toLowerCase().includes(query) && !train.trainNumber.toLowerCase().includes(query)) return;
+        if (!groups[train.operation]) groups[train.operation] = [];
+        groups[train.operation].push(train);
+    });
+    return Object.entries(groups).sort(([left], [right]) => left.localeCompare(right, "ja", { numeric: true })).map(([operation, trains]) => [operation, trains.sort((left, right) => firstTrainTime(left) - firstTrainTime(right))]);
+}
+function staffSheet(train) {
+    return `<article class="staff-sheet embedded-sheet"><div class="sheet-title"><div class="type-block">${train.type || ""}</div><div class="train-info"><div><span>列車番号</span><strong>${train.trainNumber}M</strong></div><div><span>種別</span><strong>${train.type}</strong></div><div><span>行先</span><strong>${train.destination}</strong></div><div><span>方向</span><strong>${train.direction === "down" ? "下り" : "上り"}</strong></div></div><strong class="operation-number">運用番号:${train.operation}</strong></div><div class="staff-head"><span>運転<br>時分</span><span>停車<br>時分</span><span>駅名</span><span>到着時刻</span><span>発車時刻</span><span>番線</span><span>運行案内</span><span>備考</span></div><div class="staff-rows">${stationRows(train.data, train)}</div></article>`;
+}
+function renderTrainDetails(details) {
+    if (details.dataset.rendered === "true") return;
+    const train = state.operationTrainMap.get(details.dataset.trainKey);
+    if (!train) return;
+    details.insertAdjacentHTML("beforeend", staffSheet(train));
+    details.dataset.rendered = "true";
+}
+function operationView() {
+    const groups = operationGroups();
+    state.operationTrainMap = new Map();
+    result.innerHTML = groups.map(([operation, trains]) => `<details class="operation-group" open><summary><strong>運用 ${operation}</strong></summary><div class="operation-trains">${trains.map((train, index) => { const key = `${train.direction}:${train.index}`; state.operationTrainMap.set(key, train); return `<details class="operation-train" data-train-key="${key}" ${index === 0 ? "open" : ""}><summary><span class="sequence-number">${index + 1}</span><span class="direction-mark ${train.direction}">${train.direction === "down" ? "下り" : "上り"}</span><strong>${train.trainNumber}M</strong><span>${train.type}</span><span>→ ${train.destination}</span></summary></details>`; }).join("")}</div></details>`).join("");
+    result.querySelectorAll(".operation-train[open]").forEach(renderTrainDetails);
+    emptyState.hidden = groups.length > 0;
+    if (!groups.length) emptyState.textContent = state.down || state.up ? "条件に一致する運用がありません。" : "CSVが読み込まれていません。";
+}
+function render() {
+    document.body.classList.add("operation-mode");
+    operationView();
+}
+function loadText(text, direction) { state[direction] = parseCSV(text); render(); document.getElementById("statusText").textContent = "読込完了"; }
+function readFile(file, direction) { const reader = new FileReader(); reader.onload = () => loadText(reader.result, direction); reader.readAsText(file, "UTF-8"); }
+document.getElementById("searchInput").addEventListener("input", render);
+result.addEventListener("toggle", event => {
+    if (event.target.matches(".operation-train") && event.target.open) renderTrainDetails(event.target);
+}, true);
+document.querySelectorAll("input[data-csv]").forEach(input => input.addEventListener("change", event => {
+    const file = event.target.files[0];
+    if (file) readFile(file, event.target.dataset.csv);
+}));
+document.getElementById("statusText").textContent = "未読込";
+render();
+</script>
+
+</body>
+</html>
